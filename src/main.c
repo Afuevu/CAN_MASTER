@@ -26,6 +26,8 @@ void vBlinkLedTask(void *pvParameters)
 	}
 }
 
+CAN_Message msg;
+
 int main()
 {
 
@@ -41,13 +43,18 @@ int main()
 	CAN1_Init();
 	delay_ms(500);
 
+	msg.id = 0x65D;
+	msg.dlc = 7;
+	memcpy(msg.data, "ADIOSSS", 7); // Copies "ADIOSSS" (7 characters)
+									// msg.data[7] = '\0';     // Explicit null terminator
+
 	// xTaskCreate(vBlinkLedTask, "BlinkTask", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 	//  vTaskStartScheduler();
 
 	while (1)
 	{
-		CAN1_Tx();
-		GPIOC -> ODR ^= (1 << 13); // Toggle LED
+		CAN1_Tx(&msg);
+		GPIOC->ODR ^= (1 << 13); // Toggle LED
 		delay_ms(500);
 	}
 }

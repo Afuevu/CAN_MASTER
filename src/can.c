@@ -55,9 +55,9 @@ void CAN1_Init()
     ; // Wait for normal mode
 }
 
-void CAN1_Tx(void)
+void CAN1_Tx(CAN_Message *msg)
 {
-   uint8_t our_message[8] = {'D', 'E', '_', 'N', 'A', 'D', 'A'};
+  
   if (!(CAN1->TSR & CAN_TSR_TME0))
     return; // Exit if no free mailbox
   CAN1->sTxMailBox[0].TDTR &= ~(0x0F << 0);
@@ -66,7 +66,7 @@ void CAN1_Tx(void)
    CAN1->sTxMailBox[0].TIR &= ~(CAN_TI0R_TXRQ); // Ensure TXRQ is cleared
 
   CAN1->sTxMailBox[0].TIR &= ~(0x7FF << 21);
-  CAN1->sTxMailBox[0].TIR |= (0x65D << 21); // SETTING THE STANDARD IDENTIFER TO 0X65D
+  CAN1->sTxMailBox[0].TIR |= (msg->id << 21); // SETTING THE STANDARD IDENTIFER TO 0X65D
 
  
 
@@ -74,22 +74,22 @@ void CAN1_Tx(void)
 
   CAN1->sTxMailBox[0].TIR &= ~(1 << 1); // ENABLE DATA FRAME AND DISABLING REMOTE FRAME RTR BIT
 
-  CAN1->sTxMailBox[0].TDTR = 7; // setting DLC to 7
+  CAN1->sTxMailBox[0].TDTR = msg->dlc; // setting DLC to 7
 
 
   // load the message:
 
  //Load data into TDLR and TDHR (each word = 4 bytes, LSB first)
-    CAN1->sTxMailBox[0].TDLR = (our_message[3] << 24) | (our_message[2] << 16) |
-                               (our_message[1] << 8) | (our_message[0]);
-    CAN1->sTxMailBox[0].TDHR = (our_message[6] << 16) | (our_message[5] << 8) |
-                               (our_message[4]);
+    CAN1->sTxMailBox[0].TDLR = (msg->data[3] << 24) | (msg->data[2] << 16) |
+                               (msg->data[1] << 8) | (msg->data[0]);
+    CAN1->sTxMailBox[0].TDHR = (msg->data[6] << 16) | (msg->data[5] << 8) |
+                               (msg->data[4]);
 
   CAN1->sTxMailBox[0].TIR |= (1 << 0); // TXRQ = 1 (Request transmission)
 
  uint32_t timeout = 100000;
 
-    while (!(CAN1->TSR & CAN_TSR_RQCP0) && --timeout);
+    while (!(CAN1->TSR & CAN_TSR_RQCP0));
 
   CAN1->TSR |= (1 << 0); // CLEAR REQUEST COMPLETE FLAG
 }
